@@ -1,113 +1,78 @@
-const { useState, useEffect } = React;
+const { useState } = React;
 
 // --- Mock Data ---
 const MOCK_COLLECTIONS = [
   { 
     id: 1, 
-    title: 'Urban Commuter Series', 
-    phase: 1, 
-    status: 'Concept Phase', 
-    description: 'Electric-assisted city bikes with integrated storage solutions.',
+    title: 'Urban Commuter', 
+    description: 'Electric-assisted city bikes with integrated storage solutions for daily professionals.',
+    currentPhase: 1,
+    totalPhases: 3,
+    statusText: 'Concept Phase'
   },
   { 
     id: 2, 
     title: 'Gravel Explorer', 
-    phase: 2, 
-    status: 'Bike Selection', 
-    description: 'Off-road capable long-distance geometry frames.',
+    description: 'Off-road capable long-distance geometry frames designed for ultimate durability.',
+    currentPhase: 2,
+    totalPhases: 3,
+    statusText: 'Bike Selection'
   },
   { 
     id: 3, 
     title: 'Fixie Custom', 
-    phase: 3, 
-    status: 'Artist Scouting', 
-    description: 'Collaboration with local street artists for unique frame artwork.',
+    description: 'Collaboration with local street artists featuring minimalist fixed-gear geometry.',
+    currentPhase: 3,
+    totalPhases: 3,
+    statusText: 'Artist Scouting'
   }
 ];
 
 // --- Components ---
-const Sidebar = () => {
-  return (
-    <div className="sidebar">
-      <div className="brand">
-        <span className="material-icons-round">pedal_bike</span>
-        <h1>Velocite</h1>
-      </div>
-      <div className="nav-menu">
-        <a href="#" className="nav-item active">
-          <span className="material-icons-round">space_dashboard</span>
-          Collections
-        </a>
-        <a href="#" className="nav-item">
-          <span className="material-icons-round">inventory_2</span>
-          Bikes
-        </a>
-        <a href="#" className="nav-item">
-          <span className="material-icons-round">people</span>
-          Artists
-        </a>
-      </div>
-    </div>
-  );
-};
-
-const Topbar = () => {
-  return (
-    <div className="topbar">
-      <div className="topbar-info">
-        <h2>Active Portfolios</h2>
-        <p>Manage your bicycle curations across different phases</p>
-      </div>
-      <button className="btn-primary">
-        <span className="material-icons-round">add</span>
-        New Collection
-      </button>
-    </div>
-  );
-};
 
 const CollectionCard = ({ collection }) => {
+  // Calculate progress percentage
+  const progressPercentage = (collection.currentPhase / collection.totalPhases) * 100;
+
   return (
-    <div className="glass-card">
-      <div className="card-header">
-        <h3>{collection.title}</h3>
-        <span className={`badge phase-${collection.phase}`}>
-          {collection.status}
-        </span>
-      </div>
+    <div className="collection-card">
+      <h3 className="card-title">{collection.title}</h3>
       <p className="card-description">{collection.description}</p>
       
-      {/* We will build these specific phase views step-by-step later */}
-      <div className="placeholder-box">
-        {collection.phase === 1 && "Content: Moodboard & Notes (Pending)"}
-        {collection.phase === 2 && "Content: Predefined Models (Pending)"}
-        {collection.phase === 3 && "Content: Artist List & Bio (Pending)"}
-      </div>
-    </div>
-  );
-};
-
-// --- Main Application ---
-const App = () => {
-  const [collections, setCollections] = useState(MOCK_COLLECTIONS);
-
-  return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <div className="main-content">
-        <Topbar />
-        <div className="workspace">
-          <div className="collections-grid">
-            {collections.map(collection => (
-              <CollectionCard key={collection.id} collection={collection} />
-            ))}
-          </div>
+      <div className="progress-wrapper">
+        <span className="progress-text">
+          {collection.currentPhase}/{collection.totalPhases} phases completed
+        </span>
+        <div className="progress-bar-bg">
+          <div 
+            className="progress-bar-fill" 
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
         </div>
       </div>
     </div>
   );
 };
 
-// Mount App
+const Homepage = () => {
+  const [collections] = useState(MOCK_COLLECTIONS);
+
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <h1>Bicycle Collections</h1>
+        <p>Manage and track the creative phases of your active bicycle portfolio.</p>
+      </div>
+      
+      <div className="collections-grid">
+        {collections.map(collection => (
+          <CollectionCard key={collection.id} collection={collection} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- Mount Application ---
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+root.render(<Homepage />);
