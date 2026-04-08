@@ -1,4 +1,69 @@
-const { useState } = React;
+const { useState, useEffect } = React;
+
+// --- Supabase Initialization ---
+const supabaseUrl = window.SUPABASE_URL || '';
+const supabaseKey = window.SUPABASE_ANON_KEY || '';
+const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+
+// --- Auth Component ---
+const Auth = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    if (!supabase) {
+      setMessage('Supabase client not initialized. Check config.js.');
+      return;
+    }
+    setLoading(true);
+    setMessage('');
+    
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setMessage(error.message);
+      else setMessage('Registration successful! Check your email to confirm your account.');
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setMessage(error.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-wrapper">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h2>{isSignUp ? 'Create Account' : 'Welcome Back'}</h2>
+          <p>{isSignUp ? 'Sign up to manage your bicycle collections.' : 'Enter your credentials to access the dashboard.'}</p>
+        </div>
+        <form className="auth-form" onSubmit={handleAuth}>
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength="6" />
+          </div>
+          {message && <div className={`auth-message ${message.includes('success') ? 'success' : 'error'}`}>{message}</div>}
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+          </button>
+        </form>
+        <div className="auth-toggle">
+          <span>{isSignUp ? 'Already have an account?' : "Don't have an account?"}</span>
+          <button type="button" onClick={() => setIsSignUp(!isSignUp)}>
+            {isSignUp ? 'Sign In' : 'Sign Up'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // --- Mock Data ---
 const MOCK_COLLECTIONS = [
@@ -73,8 +138,11 @@ const Homepage = () => {
   );
 };
 
-// --- App Component ---
-const App = () => {
+// --- Dashboard Component ---
+const Dashboard = () => {
+  const handleSignOut = async () => {
+    if (supabase) await supabase.auth.signOut();
+  };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const menuItems = [
@@ -109,6 +177,10 @@ const App = () => {
               <span>{item.label}</span>
             </li>
           ))}
+          <li className="sidebar-item logout-item" onClick={handleSignOut}>
+            <span className="material-icons-round">logout</span>
+            <span>Sign Out</span>
+          </li>
         </ul>
       </nav>
 
@@ -117,6 +189,38 @@ const App = () => {
       </main>
     </div>
   );
+};
+
+// --- Root App Component ---
+const App = () => {
+  const [session, setSession] = useState(null);
+  const [initialLoad, setInitialLoad] = useState(true);
+
+  useEffect(() => {
+    if (!supabase) {
+      setInitialLoad(false);
+      return;
+    }
+    
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setInitialLoad(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (initialLoad) {
+    return <div className="loading-screen">Loading application...</div>;
+  }
+
+  return !session ? <Auth /> : <Dashboard />;
 };
 
 // --- Mount Application ---
