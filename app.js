@@ -218,15 +218,24 @@ const App = () => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   const fetchProfile = async (userId) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('is_approved')
-      .eq('id', userId)
-      .single();
-    
-    if (data) {
-      setIsApproved(data.is_approved);
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching profile:", error);
+      }
+      
+      if (data) {
+        setIsApproved(data.is_approved);
+      } else {
+        setIsApproved(false);
+      }
+    } catch (err) {
+      console.error("Fetch profile exception:", err);
       setIsApproved(false);
     }
   };
@@ -237,9 +246,13 @@ const App = () => {
       return;
     }
     
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) console.error("Session error:", error);
       if (session) await fetchProfile(session.user.id);
       setSession(session);
+      setInitialLoad(false);
+    }).catch(err => {
+      console.error("Unhandled session error:", err);
       setInitialLoad(false);
     });
 
