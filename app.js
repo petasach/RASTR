@@ -25,7 +25,7 @@ const Auth = () => {
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setMessage(error.message);
-      else setMessage('Registration successful! Check your email to confirm your account.');
+      else setMessage('Registration successful! Your account is pending admin approval. Please wait to be confirmed.');
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage(error.message);
@@ -138,6 +138,26 @@ const Homepage = () => {
   );
 };
 
+// --- Pending Approval Component ---
+const PendingApproval = () => {
+  const handleSignOut = async () => {
+    if (supabase) await supabase.auth.signOut();
+  };
+  return (
+    <div className="auth-wrapper">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h2>Account Pending</h2>
+          <p>Your account is currently waiting for administrator approval. You will be notified once you are confirmed.</p>
+        </div>
+        <button onClick={handleSignOut} className="auth-button">
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // --- Dashboard Component ---
 const Dashboard = () => {
   const handleSignOut = async () => {
@@ -194,7 +214,22 @@ const Dashboard = () => {
 // --- Root App Component ---
 const App = () => {
   const [session, setSession] = useState(null);
+  const [isApproved, setIsApproved] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+
+  const fetchProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_approved')
+      .eq('id', userId)
+      .single();
+    
+    if (data) {
+      setIsApproved(data.is_approved);
+    } else {
+      setIsApproved(false);
+    }
+  };
 
   useEffect(() => {
     if (!supabase) {
@@ -202,14 +237,16 @@ const App = () => {
       return;
     }
     
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) await fetchProfile(session.user.id);
       setSession(session);
       setInitialLoad(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) await fetchProfile(session.user.id);
       setSession(session);
     });
 
@@ -220,7 +257,9 @@ const App = () => {
     return <div className="loading-screen">Loading application...</div>;
   }
 
-  return !session ? <Auth /> : <Dashboard />;
+  if (!session) return <Auth />;
+  if (!isApproved) return <PendingApproval />;
+  return <Dashboard />;
 };
 
 // --- Mount Application ---
