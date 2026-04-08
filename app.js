@@ -84,10 +84,10 @@ const App = () => {
   return (
     <div className="app-container">
       <div className="mobile-header">
+        <span className="mobile-title">Menu</span>
         <button className="menu-toggle" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
           <span className="material-icons-round">menu</span>
         </button>
-        <span className="mobile-title">Menu</span>
       </div>
 
       <div
