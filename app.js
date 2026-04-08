@@ -21,7 +21,7 @@ const Auth = () => {
     }
     setLoading(true);
     setMessage('');
-    
+
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setMessage(error.message);
@@ -224,11 +224,11 @@ const App = () => {
         .select('is_approved')
         .eq('id', userId)
         .single();
-      
+
       if (error) {
         console.error("Error fetching profile:", error);
       }
-      
+
       if (data) {
         setIsApproved(data.is_approved);
       } else {
@@ -245,7 +245,7 @@ const App = () => {
       setInitialLoad(false);
       return;
     }
-    
+
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) console.error("Session error:", error);
       if (session) await fetchProfile(session.user.id);
