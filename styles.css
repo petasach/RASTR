@@ -370,7 +370,7 @@ body {
 
 .form-group input:focus {
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
   background-color: var(--bg-surface);
 }
 
@@ -459,7 +459,7 @@ body {
 
 .logout-item {
   color: #ef4444 !important;
-  margin-top: auto !important; 
+  margin-top: auto !important;
 }
 
 .logout-item:hover {
