@@ -465,3 +465,229 @@ body {
 .logout-item:hover {
   background-color: #fef2f2 !important;
 }
+
+/* --- Collection Detail & Tabs --- */
+.collection-detail-page {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detail-header {
+  margin-bottom: 32px;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: var(--transition);
+}
+
+.back-button:hover {
+  color: var(--text-primary);
+  transform: translateX(-4px);
+}
+
+.phase-badge {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+  overflow-x: auto;
+}
+
+.tab {
+  background: none;
+  border: 1px solid transparent;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.tab:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.tab.active {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.empty-tab,
+.empty-state {
+  text-align: center;
+  padding: 64px 20px;
+  color: var(--text-tertiary);
+  font-size: 16px;
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-color);
+  width: 100%;
+}
+
+/* --- Moodboard --- */
+.moodboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.upload-btn {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.upload-btn.uploading {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
+.toolbar-info {
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+/* Moodboard Grid - Center Gravity simulation */
+.moodboard-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding-bottom: 100px;
+}
+
+.moodboard-item {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background-color: var(--bg-subtle);
+  flex-shrink: 0;
+}
+
+.moodboard-item:hover {
+  transform: scale(1.02);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.image-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.moodboard-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+/* Discrete Scale Tiers */
+.scale-1 {
+  width: 140px;
+  height: 140px;
+}
+
+.scale-2 {
+  width: 240px;
+  height: 240px;
+}
+
+.scale-3 {
+  width: 380px;
+  height: 380px;
+}
+
+.scale-4 {
+  width: 600px;
+  height: 600px;
+}
+
+/* Mobile Optimization for Tiers */
+@media (max-width: 768px) {
+  .scale-1 {
+    width: 100px;
+    height: 100px;
+  }
+
+  .scale-2 {
+    width: 150px;
+    height: 150px;
+  }
+
+  .scale-3 {
+    width: calc(100vw - 64px);
+    height: 300px;
+  }
+
+  /* Ensures it fits with padding */
+  .scale-4 {
+    width: calc(100vw - 64px);
+    height: 400px;
+  }
+}

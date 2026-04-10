@@ -95,12 +95,12 @@ const MOCK_COLLECTIONS = [
 
 // --- Components ---
 
-const CollectionCard = ({ collection }) => {
+const CollectionCard = ({ collection, onSelect }) => {
   // Calculate progress percentage
   const progressPercentage = (collection.currentPhase / collection.totalPhases) * 100;
 
   return (
-    <div className="collection-card">
+    <div className="collection-card" onClick={() => onSelect(collection)}>
       <h3 className="card-title">{collection.title}</h3>
       <p className="card-description">{collection.description}</p>
 
@@ -119,7 +119,7 @@ const CollectionCard = ({ collection }) => {
   );
 };
 
-const Homepage = () => {
+const Homepage = ({ onSelectCollection }) => {
   const [collections] = useState(MOCK_COLLECTIONS);
 
   return (
@@ -131,8 +131,153 @@ const Homepage = () => {
 
       <div className="collections-grid">
         {collections.map(collection => (
-          <CollectionCard key={collection.id} collection={collection} />
+          <CollectionCard key={collection.id} collection={collection} onSelect={onSelectCollection} />
         ))}
+      </div>
+    </div>
+  );
+};
+
+// --- Moodboard & Collection Detail Components ---
+const Moodboard = ({ collectionId }) => {
+  const [images, setImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  const fetchImages = async () => {
+    const { data, error } = await supabase
+      .from('moodboard_images')
+      .select('*')
+      .eq('collection_id', collectionId);
+    if (data) setImages(data);
+  };
+
+  useEffect(() => {
+    fetchImages();
+
+    const channel = supabase
+      .channel('moodboard_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'moodboard_images', filter: `collection_id=eq.${collectionId}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setImages(prev => [...prev, payload.new]);
+        } else if (payload.eventType === 'UPDATE') {
+          setImages(prev => prev.map(img => img.id === payload.new.id ? payload.new : img));
+        } else if (payload.eventType === 'DELETE') {
+          setImages(prev => prev.filter(img => img.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [collectionId]);
+
+  const handleUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${collectionId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('moodboard')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      alert('Error uploading image: ' + uploadError.message);
+      setUploading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('moodboard')
+      .getPublicUrl(filePath);
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    const { error: dbError } = await supabase
+      .from('moodboard_images')
+      .insert([
+        { collection_id: collectionId, image_url: publicUrl, uploaded_by: session.user.id }
+      ]);
+
+    if (dbError) {
+      alert('Error saving image record: ' + dbError.message);
+    }
+    setUploading(false);
+  };
+
+  const handleImageClick = async (image) => {
+    const newTier = image.scale_tier >= 4 ? 1 : image.scale_tier + 1;
+    setImages(prev => prev.map(img => img.id === image.id ? { ...img, scale_tier: newTier } : img));
+    await supabase.from('moodboard_images').update({ scale_tier: newTier }).eq('id', image.id);
+  };
+
+  const sortedImages = [...images].sort((a, b) => b.scale_tier - a.scale_tier);
+  const arrangedImages = [];
+  sortedImages.forEach((img, index) => {
+    if (index % 2 === 0) arrangedImages.push(img);
+    else arrangedImages.unshift(img);
+  });
+
+  return (
+    <div className="moodboard-container">
+      <div className="moodboard-toolbar">
+        <label className={`upload-btn ${uploading ? 'uploading' : ''}`}>
+          {uploading ? 'Uploading...' : 'Upload Concept Photo'}
+          <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} disabled={uploading} />
+        </label>
+        <div className="toolbar-info">Click any image to resize. Syncs instantly for all users.</div>
+      </div>
+
+      <div className="moodboard-grid">
+        {arrangedImages.map(img => (
+          <div
+            key={img.id}
+            className={`moodboard-item scale-${img.scale_tier}`}
+            onClick={() => handleImageClick(img)}
+            title="Click to change size"
+          >
+            <div className="image-wrapper">
+              <img src={img.image_url} alt="Concept" loading="lazy" />
+            </div>
+          </div>
+        ))}
+        {images.length === 0 && !uploading && (
+          <div className="empty-state">No concept photos uploaded yet.</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const CollectionDetail = ({ collection, onBack }) => {
+  const [currentTab, setCurrentTab] = useState('concept');
+
+  return (
+    <div className="page-container collection-detail-page">
+      <div className="page-header detail-header">
+        <button className="back-button" onClick={onBack}>
+          <span className="material-icons-round">arrow_back</span> Back to Collections
+        </button>
+        <div className="detail-title-row">
+          <h1>{collection.title}</h1>
+          <span className="phase-badge">{collection.statusText}</span>
+        </div>
+        <p>{collection.description}</p>
+      </div>
+      <div className="tabs">
+        <button className={`tab ${currentTab === 'concept' ? 'active' : ''}`} onClick={() => setCurrentTab('concept')}>Moodboard</button>
+        <button className={`tab ${currentTab === 'bike' ? 'active' : ''}`} onClick={() => setCurrentTab('bike')}>Bike Selection</button>
+        <button className={`tab ${currentTab === 'artist' ? 'active' : ''}`} onClick={() => setCurrentTab('artist')}>Artist Scouting</button>
+      </div>
+
+      <div className="tab-content">
+        {currentTab === 'concept' && <Moodboard collectionId={collection.id} />}
+        {currentTab === 'bike' && <div className="empty-tab">Bike Selection tools coming soon...</div>}
+        {currentTab === 'artist' && <div className="empty-tab">Artist Scouting tools coming soon...</div>}
       </div>
     </div>
   );
@@ -164,9 +309,10 @@ const Dashboard = () => {
     if (supabase) await supabase.auth.signOut();
   };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedCollection, setSelectedCollection] = useState(null);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' }
+    { id: 'dashboard', label: 'Home', icon: 'dashboard', action: () => setSelectedCollection(null) }
   ];
 
   return (
@@ -192,7 +338,7 @@ const Dashboard = () => {
         </div>
         <ul className="sidebar-menu">
           {menuItems.map(item => (
-            <li key={item.id} className="sidebar-item active">
+            <li key={item.id} className="sidebar-item active" onClick={() => { item.action(); setIsSidebarOpen(false); }}>
               <span className="material-icons-round">{item.icon}</span>
               <span>{item.label}</span>
             </li>
@@ -205,7 +351,11 @@ const Dashboard = () => {
       </nav>
 
       <main className="main-content">
-        <Homepage />
+        {selectedCollection ? (
+          <CollectionDetail collection={selectedCollection} onBack={() => setSelectedCollection(null)} />
+        ) : (
+          <Homepage onSelectCollection={setSelectedCollection} />
+        )}
       </main>
     </div>
   );
