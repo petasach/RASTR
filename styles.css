@@ -681,13 +681,13 @@ body {
   }
 
   .scale-3 {
-    width: calc(100vw - 64px);
-    height: 300px;
+    width: 200px;
+    height: 200px;
   }
 
   /* Ensures it fits with padding */
   .scale-4 {
     width: calc(100vw - 64px);
-    height: 400px;
+    height: 300px;
   }
 }
